@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "image-scrapper-py"
+version = "0.1.0"
+description = "Console app to download images"
+authors = ["NovaHFly <mugiviska@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "image_scrapper", from = "src"}]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Private :: Do Not Upload",
+]
+
+[tool.poetry.scripts]
+image_scrapper = "image_scrapper:main_cli"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+httpx = ">=0.24.1"
+tenacity = ">=8.2.2"
+brotlipy =">=0.7.0"
+docopt-ng = ">=0.9.0"
+lxml = ">=4.9.3"
+beautifulsoup4 = ">=4.12.2"
+
+[tool.poetry.group.dev.dependencies]
+icecream = "^2.1.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "--cov=image_scrapper"
+testpaths = [
+    "tests"
+]
