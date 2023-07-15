@@ -21,7 +21,7 @@ from image_scrapper.helpers import (
     retry_times,
 )
 
-HEADERS = {'referer': 'https://www.pixiv.net/'}
+LOCAL_HEADERS = {'referer': 'https://www.pixiv.net/'}
 
 LOCAL_DOWNLOADS = DOWNLOADS / 'pixiv'
 LOCAL_COOKIES = COOKIES / 'pixiv'
@@ -36,7 +36,7 @@ class UgoiraPackage(AuthorPackage):
     download_url: str
 
     @property
-    def download_data(self) -> Iterable[DownloadUnit]:
+    def contents(self) -> Iterable[DownloadUnit]:
         
         file_path = LOCAL_DOWNLOADS / self.author / (construct_package_name(
             self.id, self.title, author=self.author
@@ -51,7 +51,7 @@ class IllustrationPackage(AuthorPackage):
     page_count: int
 
     @property
-    def download_data(self) -> Iterable[DownloadUnit]:
+    def contents(self) -> Iterable[DownloadUnit]:
 
         base_name = construct_package_name(
             self.id, self.title, author=self.author, add_counter=True
@@ -106,12 +106,12 @@ class LocalPageParser(PageParser):
             while not (ugoira_url := self.get_ugoira_mp4_url(px_id)):
                 pass
             return UgoiraPackage(
-                px_id, title, ugoira_url, author=author)
+                px_id, title, author, ugoira_url)
         
         page_count: int = img_data['pageCount']
         base_url = orig_url.replace('_p0', '_p{}')
         return IllustrationPackage(
-            px_id, title, base_url, page_count, author=author
+            px_id, title, author, base_url, page_count
         )
             
 
