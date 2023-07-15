@@ -1,29 +1,24 @@
-# All files and dirs starting with dot in root (venv and some junk)
-/.*
-# But not .gitignore
+.*
 !.gitignore
-
-# All unneeded text files in root
-/*.txt
-/*.html
-
-# Egg and pycache files
-*.egg-info
-__pycache__
-
-# Jupyter debug notebooks
-*.ipynb
-
-# Files and folders starting with underscore (leftover files)
 _*
-
-# But not __init__
 !__init__.py
 
-# Venv activate script
+*.py[co]
+*.ipynb
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+
+# Data dir
+/Data
+
+# Unit test / coverage reports
+.coverage
+
+# Venv activate scripts
 activate
 activate.bat
-
-/Data
-/LICENSE
-/dist
