@@ -1,16 +1,18 @@
 
 import importlib
-from typing import Protocol
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
-from image_scrapper.api_base import get_api, PageParser
+from image_scrapper.api_base import PageParser, ScrapperApi, get_api
 from image_scrapper.helpers import read_cookies
 
 
-class DownloaderModule(Protocol):
-    PageParser: PageParser
-    LOCAL_HEADERS: dict | None
-    LOCAL_COOKIES: Path | None
+@dataclass
+class ModuleData:
+    page_parser: Callable[[],PageParser]
+    headers: dict
+    cookies: dict
 
 module_names = tuple(
     module_path.stem for module_path in
@@ -21,31 +23,47 @@ module_names = tuple(
             module_path.name != '__init__.py'
 )
 
-def import_plugin_module(module_name: str) -> DownloaderModule:
-    return importlib.import_module(f'.{module_name}', 'image_scrapper.modules')
+def get_module_data(module_name: str) -> ModuleData:
 
-def get_module_api(module: DownloaderModule):
+    module = importlib.import_module(
+        f'.{module_name}',
+        'image_scrapper.modules'
+    )
 
-    headers = module.LOCAL_HEADERS \
-        if 'LOCAL_HEADERS' in module.__dict__ else {}
+    if not 'LocalPageParser' in module.__dict__:
+        raise TypeError(f'Invalid module: {module}')
     
-    cookies = read_cookies(module.LOCAL_COOKIES) \
-        if 'LOCAL_COOKIES' in module.__dict__ else {}
+    page_parser = module.LocalPageParser
     
-    api = get_api(module.PageParser, headers, cookies)
+    headers = {}
+    if 'LOCAL_HEADERS' in module.__dict__:
+        headers = module.LOCAL_HEADERS
+    
+    cookies = {}
+    if 'LOCAL_COOKIES' in module.__dict__:
+        cookies = read_cookies(module.LOCAL_COOKIES)
 
+    return ModuleData(page_parser, headers, cookies)
+
+def get_module_api(module_data: ModuleData) -> ScrapperApi:
+
+    parser = module_data.page_parser
+    headers = module_data.headers
+    cookies = module_data.cookies
+    
+    api = get_api(parser, headers, cookies)
     return api
         
 
-loaded_modules: dict[str, DownloaderModule] = {
-    name: import_plugin_module(name) for name in module_names
+modules_data: dict[str, ModuleData] = {
+    name: get_module_data(name) for name in module_names
 }
 
-module_api_list = {
+module_apis = {
     module_name: get_module_api(module)
-        for module_name, module in loaded_modules.items()
+        for module_name, module in modules_data.items()
 }
 
 __all__ = [
-    'module_api_list',
+    'module_apis',
 ]

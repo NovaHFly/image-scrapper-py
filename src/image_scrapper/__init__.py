@@ -10,13 +10,13 @@ Options:
 
 '''
 
-from docopt import docopt
-from .modules import module_api_list
+from docopt import docopt, ParsedOptions
+from .modules import module_apis
 
 
-def main(args: dict):
+def main(args: ParsedOptions):
 
-    module = module_api_list['deviantart']
+    module = module_apis['deviantart']
     
     url = args.URLS[0]
     module.download_from(url)

@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Type
+from typing import Iterable, Callable
 
 import httpx
 from icecream import ic
@@ -22,10 +22,10 @@ class UnloggedError(Exception):
     ...
 
 
-def construct_file_name(
+def construct_package_name(
         pack_id: str, title: str, *,
-        author: str = None,
-        file_extension: str = None,
+        author: str|None = None,
+        file_extension: str|None = None,
         add_counter: bool = False) -> str:
     
     package_name = f'{title}'
@@ -167,7 +167,7 @@ class ScrapperApi:
 
 
 def get_api(
-        page_parser: Type[PageParser],
+        page_parser: Callable[[], PageParser],
         headers: dict = {}, cookies: dict = {},
         ) -> ScrapperApi:
     
@@ -188,9 +188,10 @@ __all__ = [
     'DownloadUnit',
     'BasicPackage',
     'AuthorPackage',
+    'DownloadPackage',
     'ScrapperApi',
     'PageParser',
-    'construct_file_name',
+    'construct_package_name',
     'UnloggedError',
     'get_api',
 ]

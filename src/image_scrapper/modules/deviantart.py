@@ -2,27 +2,26 @@ import re
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from httpx import Response
 from bs4 import BeautifulSoup as bs
-
+from httpx import Response
 from icecream import ic
 
 from image_scrapper.api_base import (
-    AuthorPackage, DownloadUnit,
-    construct_file_name, UnloggedError,
-    PageParser
+    AuthorPackage, DownloadUnit, PageParser,
+    UnloggedError, construct_package_name
 )
 from image_scrapper.api_base.api_base import DownloadPackage
 from image_scrapper.constants.paths import COOKIES, DOWNLOADS
 from image_scrapper.helpers import (
-    extract_file_extension, write_cookies, replace_win_path_symbols,
+    extract_file_extension,
+    replace_win_path_symbols,
+    write_cookies
 )
 
 LOCAL_HEADERS = {'referer': 'https://www.deviantart.com'}
 
 LOCAL_DOWNLOADS = DOWNLOADS / 'deviantart'
 LOCAL_COOKIES = COOKIES / 'deviantart'
-
 
 STASH_REGEX = re.compile('(sta\.sh\/[0-9a-z]+)\??')
 
@@ -40,7 +39,7 @@ class DeviantartPackage(AuthorPackage):
         # ? 1. Main url, uses id, title and author
         # 2. Description
         # 3. Stash urls, uses id, title + 'sta.sh', author and counter
-        base_path = LOCAL_DOWNLOADS / self.author / construct_file_name(
+        base_path = LOCAL_DOWNLOADS / self.author / construct_package_name(
             self.id, self.title, author=self.author,
         )
         
@@ -52,7 +51,7 @@ class DeviantartPackage(AuthorPackage):
 
         if self.description:
             text_path = base_path.with_suffix('.txt')
-            yield DownloadUnit(self.description, text_path, 'text')
+            yield DownloadUnit(self.description, text_path, kind='text')
 
         for img_url, img_title in self.stash_urls:
 
@@ -116,7 +115,7 @@ def _get_stash_file(main: bs) -> tuple[str, str]:
     return img_url, img_title
 
 
-class PageParser(PageParser):
+class LocalPageParser(PageParser):
 
     def _get_stash_urls(self, description: str) -> Iterable[tuple[str,str]]:
         """Goes over all sta.sh urls found in deviation's description.
@@ -151,8 +150,7 @@ class PageParser(PageParser):
                 img_url, img_title = _get_stash_file(bs(res.text, 'lxml'))
                 yield img_url, f'[{folder_title}] [{i}] {img_title}'
 
-    
-    def parse(self, response: Response) -> DownloadPackage:
+    def parse(self, response: Response) -> DeviantartPackage:
 
         cookies = response.cookies
 
@@ -188,7 +186,8 @@ class PageParser(PageParser):
             da_id, title, author, download_url, description, stash_urls
         )
 
+
 __all__ = [
-    'PageParser',
+    'LocalPageParser',
 ]
 

@@ -2,4 +2,5 @@
 
 Downloads images from:
 - DeviantArt
+- Pixiv
 - ...
