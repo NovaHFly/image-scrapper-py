@@ -7,8 +7,10 @@ from urllib.parse import unquote
 import httpx
 from bs4 import BeautifulSoup as bs
 
-from image_scrapper.api_base import (AuthorPackage, DownloadUnit, PageParser,
-                                     construct_package_name)
+from image_scrapper.api import (
+    AuthorPackage, DownloadUnit, PageParser,
+    construct_package_name
+)
 from image_scrapper.constants.paths import DOWNLOADS
 from image_scrapper.helpers import extract_file_extension
 

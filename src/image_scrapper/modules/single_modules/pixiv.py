@@ -4,19 +4,18 @@ import json
 import re
 from typing import Iterable
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import httpx
 from bs4 import BeautifulSoup as bs
 from icecream import ic
 
-from image_scrapper.api_base import (
+from image_scrapper.api import (
     AuthorPackage, DownloadUnit, PageParser,
     UnloggedError, construct_package_name,
 )
 from image_scrapper.constants.paths import COOKIES, DOWNLOADS
 from image_scrapper.helpers import (
     extract_file_extension,
-    replace_win_path_symbols,
     write_cookies,
     retry_times,
 )
@@ -82,7 +81,7 @@ class LocalPageParser(PageParser):
     @retry_times(5)
     def get_ugoira_mp4_url(self, px_id: str):
         
-        api_response = self.parent_api.client.post(UGOIRA_API, data={'text': px_id})
+        api_response = self.parent_api.post_response(UGOIRA_API, {'text': px_id})
         ic(api_response)
 
         response_json = json.loads(api_response.text)

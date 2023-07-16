@@ -22,3 +22,5 @@ eggs
 # Venv activate scripts
 activate
 activate.bat
+activate.ps1
+activate.sh

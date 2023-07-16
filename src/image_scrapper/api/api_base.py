@@ -9,6 +9,9 @@ from icecream import ic
 
 from image_scrapper.helpers import replace_win_path_symbols, retry_times
 
+
+httpx._config.DEFAULT_CIPHERS += ":ALL:@SECLEVEL=1"
+
 # ? Not sure if using different user agent will always allow to bypass
 # ?  bot checks. Most likely if something is blocked by cloudflare check
 # ?  it won't help
@@ -113,6 +116,10 @@ class ScrapperApi:
     def get_response(self, url: str):
         """Allows for request repeating on exception"""
         return self.client.get(url)
+    
+    @retry_times(5)
+    def post_response(self, url: str, payload: dict):
+        return self.client.post(url, data=payload)
 
     def _download_package(self, package: DownloadPackage):
 
@@ -139,6 +146,7 @@ class ScrapperApi:
 
         ic(success_message)
 
+    @retry_times(5)
     def _download_file(self, from_url: str, to_path: Path):
         """Downloads one file"""
 

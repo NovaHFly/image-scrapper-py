@@ -19,6 +19,7 @@ from icecream import ic
 
 from .modules import module_apis
 
+
 HOST_PATTERN = re.compile('https:\/\/(?:.+\.)?([a-z\-]+)\.[a-z]{3}')
 
 def get_url_host(url: str) -> str:

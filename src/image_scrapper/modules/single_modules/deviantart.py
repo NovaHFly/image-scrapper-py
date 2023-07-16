@@ -6,11 +6,10 @@ from bs4 import BeautifulSoup as bs
 from httpx import Response
 from icecream import ic
 
-from image_scrapper.api_base import (
+from image_scrapper.api import (
     AuthorPackage, DownloadUnit, PageParser,
     UnloggedError, construct_package_name
 )
-from image_scrapper.api_base.api_base import DownloadPackage
 from image_scrapper.constants.paths import COOKIES, DOWNLOADS
 from image_scrapper.helpers import (
     extract_file_extension,
