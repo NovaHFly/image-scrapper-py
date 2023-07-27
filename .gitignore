@@ -24,3 +24,9 @@ activate
 activate.bat
 activate.ps1
 activate.sh
+
+# Debug html response dumps in root
+/*.html
+
+# Log files
+*.log

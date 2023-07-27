@@ -9,7 +9,7 @@ from icecream import ic
 
 from image_scrapper.helpers import replace_win_path_symbols, retry_times
 
-
+# % From stackoverflow to prevent ssl dh key too small error
 httpx._config.DEFAULT_CIPHERS += ":ALL:@SECLEVEL=1"
 
 # ? Not sure if using different user agent will always allow to bypass
@@ -21,15 +21,28 @@ BASE_HEADERS = {
 
 BASE_SUCCESS_MESSAGE = '{} download finished: {}!'
 
+
 class UnloggedError(Exception):
+    """Site requires user login to view some content (deviantart, pixiv, etc.)"""
     ...
 
 
 def construct_package_name(
-        pack_id: str, title: str, *,
-        author: str|None = None,
-        file_extension: str|None = None,
-        add_counter: bool = False) -> str:
+        *, pack_id: str,
+        title: str,
+        author: str = '',
+        file_extension: str = '',
+        multipage: bool = False,
+        ) -> str:
+    """Constructs package name.
+    
+    Args:
+        pack_id: str - package id [str]
+        title: package title [str]
+        author: package author if exists [str] (Default: '')
+        file_extension: common file extension for package [str] (Default: '')
+        multipage: package has multiple files [bool] (Default: False)
+        """
     
     package_name = f'{title}'
 
@@ -38,7 +51,7 @@ def construct_package_name(
     
     package_name += f' - {pack_id}'
 
-    if add_counter:
+    if multipage:
         package_name += '[{}]'
     
     if file_extension:

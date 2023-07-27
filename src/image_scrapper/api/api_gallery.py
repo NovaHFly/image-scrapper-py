@@ -49,10 +49,12 @@ class GalleryPackage(BasicPackage):
 
     @property
     def contents(self) -> Iterable[DownloadUnit]:
-        
-        base_path = self.download_dir / construct_package_name(
-            self.id, self.title
+
+        dir_name = construct_package_name(
+            pack_id=self.id,
+            title=self.title,
         )
+        base_path = self.download_dir / dir_name
 
         for i, url in enumerate(self.image_urls, 1):
 
