@@ -14,7 +14,7 @@ from image_scrapper.constants.paths import COOKIES, DOWNLOADS
 from image_scrapper.helpers import (
     extract_file_extension,
     replace_win_path_symbols,
-    write_cookies
+    write_cookies, dump_response_text
 )
 
 LOCAL_HEADERS = {'referer': 'https://www.deviantart.com'}
@@ -38,32 +38,40 @@ class DeviantartPackage(AuthorPackage):
         # ? 1. Main url, uses id, title and author
         # 2. Description
         # 3. Stash urls, uses id, title + 'sta.sh', author and counter
-        base_path = LOCAL_DOWNLOADS / self.author / construct_package_name(
-            self.id, self.title, author=self.author,
+        base_fname = construct_package_name(
+            pack_id=self.id,
+            title=self.title,
+            author=self.author,
         )
+        base_path = LOCAL_DOWNLOADS / self.author / base_fname
         
         if self.download_url:
-            main_path = base_path.with_suffix(
-                f'.{extract_file_extension(self.download_url)}'
-            )
+            suffix = f'.{extract_file_extension(self.download_url)}'
+            main_path = base_path.with_suffix(suffix)
             yield DownloadUnit(self.download_url, main_path)
 
         if self.description:
             text_path = base_path.with_suffix('.txt')
             yield DownloadUnit(self.description, text_path, kind='text')
 
-        for img_url, img_title in self.stash_urls:
+            ic(self.stash_urls)
 
-            img_title = replace_win_path_symbols(img_title)
-            img_title = f'{img_title} by {self.author} - {self.id}'
+            if not self.stash_urls:
+                ic('STOP!!!!!')
+                raise StopIteration
 
-            ic(img_url)
+            for img_url, img_title in self.stash_urls:
 
-            stash_path = base_path.with_stem(
-                img_title
-            ).with_suffix(f'.{extract_file_extension(img_url)}')
+                img_title = replace_win_path_symbols(img_title)
+                img_title = f'{img_title} by {self.author} - {self.id}'
 
-            yield DownloadUnit(img_url, stash_path)
+                ic(img_url)
+
+                stash_path = base_path.with_stem(
+                    img_title
+                ).with_suffix(f'.{extract_file_extension(img_url)}')
+
+                yield DownloadUnit(img_url, stash_path)
 
 def _get_original_link(fullview: str, image_size: tuple[int, int]) -> str:
     
@@ -90,11 +98,18 @@ def _get_download_url(main: bs) -> str | None:
 
     if (fullview_link := main.select_one('link[fetchpriority="high"]')):
         
-        image_size_string = main('._3rhGt').text.split('px')[0]
+        image_size_string = main.select_one('._3rhGt').text.split('px')[0]
         image_size = (int(size) for size in image_size_string.split('x'))
 
-        return _get_original_link(fullview_link, image_size)
+        return _get_original_link(fullview_link.attrs['src'], image_size)
     
+    if img_alt := main.select_one('img.TZM0T'):
+        ic('Alt image!')
+        image_size_string = main.select_one('._3rhGt').text.split('px')[0]
+        image_size = (int(size) for size in image_size_string.split('x'))
+        
+        return _get_original_link(img_alt.attrs['src'], image_size)
+
     return None
 
 def _get_description(main: bs) -> str | None:
@@ -119,16 +134,23 @@ class LocalPageParser(PageParser):
     def _get_stash_urls(self, description: str) -> Iterable[tuple[str,str]]:
         """Goes over all sta.sh urls found in deviation's description.
         Separately processes sta.sh singles and folders."""
+
+        if not description:
+            return None
         
         # Collect all sta.sh urls
         stash_urls = (match[1] for match in STASH_REGEX.finditer(description))
 
         # IF none are found stop generator
         if not stash_urls:
-            yield None
-            raise StopIteration
+            return None
+        
+        # ! Temporarily unavailable
+        return None
 
         for url in (f'https://{stash_url}' for stash_url in stash_urls):
+
+            ic(url)
 
             res = self.parent_api.get_response(url)
             main = bs(res.text, 'lxml')
@@ -153,9 +175,11 @@ class LocalPageParser(PageParser):
 
         cookies = response.cookies
 
+        dump_response_text(response, 'deviantart')
+
         main = bs(response.text, 'lxml')
 
-        if main.select('.iRyI_'):
+        if 'Log In' in main.text:
 
             print('Cookies outdated! '
                     'Please enter new cookies and restart program:')

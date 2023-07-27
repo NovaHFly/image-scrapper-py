@@ -29,7 +29,10 @@ class KemonoPackage(AuthorPackage):
     def contents(self) -> Iterable[DownloadUnit]:
 
         base_name = construct_package_name(
-            self.id, self.title, author=self.author, add_counter=True,
+            pack_id=self.id,
+            title=self.title,
+            author=self.author,
+            multipage=True,
         )
 
         for i, i_url in enumerate(self.image_urls, 1):
@@ -41,7 +44,9 @@ class KemonoPackage(AuthorPackage):
             yield DownloadUnit(i_url, file_path)
 
         a_base_name = construct_package_name(
-            self.id, self.title, author=self.author
+            pack_id=self.id,
+            title=self.title,
+            author=self.author,
         )
 
         for a_name, a_url in self.attachments:

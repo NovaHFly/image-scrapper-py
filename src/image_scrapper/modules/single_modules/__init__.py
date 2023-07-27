@@ -50,7 +50,7 @@ def get_module_data(module_name: str) -> ModuleData:
 
 module_names = (
     module_path.stem for module_path in SELF_PATH.glob('*')
-        if module_path.suffix == '.py' and module_path.stem != '__init__'
+        if module_path.suffix == '.py' and not module_path.stem == '__init__'
 )
 
 module_apis = {

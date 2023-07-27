@@ -36,10 +36,14 @@ class UgoiraPackage(AuthorPackage):
 
     @property
     def contents(self) -> Iterable[DownloadUnit]:
-        
-        file_path = LOCAL_DOWNLOADS / self.author / (construct_package_name(
-            self.id, self.title, author=self.author
-        ) + '.mp4')
+
+        file_name = construct_package_name(
+            pack_id=self.id,
+            title=self.title,
+            author=self.author,
+            file_extension='mp4'
+        )
+        file_path = LOCAL_DOWNLOADS / self.author / file_name
 
         yield DownloadUnit(self.download_url, file_path)
         
@@ -53,8 +57,12 @@ class IllustrationPackage(AuthorPackage):
     def contents(self) -> Iterable[DownloadUnit]:
 
         base_name = construct_package_name(
-            self.id, self.title, author=self.author, add_counter=True
-            ) + '.' + extract_file_extension(self.base_url)
+            pack_id=self.id,
+            title=self.title,
+            author=self.author,
+            file_extension=extract_file_extension(self.base_url),
+            multipage=True
+        )
         
         for i in range(self.page_count):
             
