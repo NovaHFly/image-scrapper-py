@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from image_scrapper.api import PageParser, get_api
+from image_scrapper.api import get_api, ScrapperApi
 from image_scrapper.helpers import read_cookies
+
+import httpx
 
 
 SELF_PATH = Path(__file__).absolute().parent
@@ -32,12 +34,13 @@ def is_module(path: Path) -> bool:
 
 @dataclass
 class ModuleData:
-    page_parser: Callable[[], PageParser]
+
+    api_class: Callable[[httpx.Client], ScrapperApi]
     headers: dict
     cookies: dict
 
     def unpack(self):
-        return self.page_parser, self.headers, self.cookies
+        return self.api_class, self.headers, self.cookies
     
 
 def get_module_data(module_name: str) -> ModuleData:
@@ -47,7 +50,7 @@ def get_module_data(module_name: str) -> ModuleData:
     )
 
     try:
-        page_parser = module.LocalPageParser
+        api_class = module.LocalApi
     except AttributeError:
         # TODO: Raise valid error if module is invalid
         raise
@@ -63,7 +66,7 @@ def get_module_data(module_name: str) -> ModuleData:
     except AttributeError:
         cookies = {}
 
-    return ModuleData(page_parser, headers, cookies)
+    return ModuleData(api_class, headers, cookies)
 
 
 module_names = (

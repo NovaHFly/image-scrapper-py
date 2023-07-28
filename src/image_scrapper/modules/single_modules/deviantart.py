@@ -7,7 +7,7 @@ from httpx import Response
 from icecream import ic
 
 from image_scrapper.api import (
-    AuthorPackage, DownloadUnit, PageParser,
+    AuthorPackage, DownloadUnit, ScrapperApi,
     UnloggedError, construct_package_name
 )
 from image_scrapper.constants.paths import COOKIES, DOWNLOADS
@@ -129,7 +129,7 @@ def _get_stash_file(main: bs) -> tuple[str, str]:
     return img_url, img_title
 
 
-class LocalPageParser(PageParser):
+class LocalApi(ScrapperApi):
 
     def _get_stash_urls(self, description: str) -> Iterable[tuple[str,str]]:
         """Goes over all sta.sh urls found in deviation's description.
@@ -152,7 +152,7 @@ class LocalPageParser(PageParser):
 
             ic(url)
 
-            res = self.parent_api.get_response(url)
+            res = self.get(url)
             main = bs(res.text, 'lxml')
 
             # If url leads to single image
@@ -166,7 +166,7 @@ class LocalPageParser(PageParser):
             for i, a in enumerate(main.select('.stash-thumb-container.already-uploaded a.t'), 1):
 
                 stash_url = a.attrs['href']
-                res = self.parent_api.get_response(stash_url)
+                res = self.get(stash_url)
 
                 img_url, img_title = _get_stash_file(bs(res.text, 'lxml'))
                 yield img_url, f'[{folder_title}] [{i}] {img_title}'
@@ -211,6 +211,6 @@ class LocalPageParser(PageParser):
 
 
 __all__ = [
-    'LocalPageParser',
+    'LocalApi',
 ]
 

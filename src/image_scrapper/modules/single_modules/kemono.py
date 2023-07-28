@@ -8,7 +8,7 @@ import httpx
 from bs4 import BeautifulSoup as bs
 
 from image_scrapper.api import (
-    AuthorPackage, DownloadUnit, PageParser,
+    AuthorPackage, DownloadUnit, ScrapperApi,
     construct_package_name
 )
 from image_scrapper.constants.paths import DOWNLOADS
@@ -57,7 +57,7 @@ class KemonoPackage(AuthorPackage):
             yield DownloadUnit(a_url, file_path)
 
 
-class LocalPageParser(PageParser):
+class LocalApi(ScrapperApi):
     
     def parse(self, response: httpx.Response) -> KemonoPackage:
 
@@ -87,5 +87,5 @@ class LocalPageParser(PageParser):
             post_id, title, author, image_urls, attachments)
 
 __all__ = [
-    'LocalPageParser'
+    'LocalApi'
 ]

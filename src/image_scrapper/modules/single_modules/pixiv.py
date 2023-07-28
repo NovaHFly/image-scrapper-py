@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup as bs
 from icecream import ic
 
 from image_scrapper.api import (
-    AuthorPackage, DownloadUnit, PageParser,
+    AuthorPackage, DownloadUnit, ScrapperApi,
     UnloggedError, construct_package_name,
 )
 from image_scrapper.constants.paths import COOKIES, DOWNLOADS
@@ -84,12 +84,12 @@ def _get_preload_json(
     return json.loads(meta_preload.attrs['content'])
 
 
-class LocalPageParser(PageParser):
+class LocalApi(ScrapperApi):
 
     @retry_times(5)
     def get_ugoira_mp4_url(self, px_id: str):
         
-        api_response = self.parent_api.post_response(UGOIRA_API, {'text': px_id})
+        api_response = self.post(UGOIRA_API, {'text': px_id})
         ic(api_response)
 
         response_json = json.loads(api_response.text)
@@ -123,5 +123,5 @@ class LocalPageParser(PageParser):
             
 
 __all__ = [
-    'LocalPageParser'
+    'LocalApi'
 ]

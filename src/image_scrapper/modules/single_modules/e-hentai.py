@@ -4,11 +4,11 @@ from icecream import ic
 
 from image_scrapper.constants.paths import DOWNLOADS
 from image_scrapper.api import (
-    GalleryParser, GalleryParseParams
+    GalleryApi, GalleryParseParams
 )
 
 
-class LocalPageParser(GalleryParser):
+class LocalApi(GalleryApi):
 
     parse_params = GalleryParseParams(
         title_header_selector='h1',
@@ -25,7 +25,7 @@ class LocalPageParser(GalleryParser):
         for i in range(page_count):
             
             g_page_url = self.current_url + f'?p={i}'
-            g_page_res = self.parent_api.get_response(g_page_url)
+            g_page_res = self.get(g_page_url)
 
             ic(f'Got page {i+1}!')
 
@@ -37,5 +37,5 @@ class LocalPageParser(GalleryParser):
                 yield image_tag.attrs['href']
 
 __all__ = [
-    'LocalPageParser',
+    'LocalApi',
 ]

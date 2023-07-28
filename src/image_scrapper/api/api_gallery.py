@@ -12,7 +12,7 @@ from icecream import ic
 from image_scrapper.helpers import extract_file_extension
 
 from .api_base import (
-    BasicPackage, DownloadUnit, PageParser,
+    BasicPackage, DownloadUnit, ScrapperApi,
     construct_package_name
 )
 
@@ -63,26 +63,16 @@ class GalleryPackage(BasicPackage):
 
             yield DownloadUnit(url, file_path)
     
+@dataclass
+class GalleryApi(ScrapperApi):
 
-class GalleryParser(PageParser):
+    parse_params: GalleryParseParams = None
 
-    parse_params: GalleryParseParams
-    current_url: str = ''
-
-    # & It just works for now
-    def __call__(self):
-        return self
-
-    def set_parse_params(self, params: GalleryParseParams) -> 'GalleryParser':
-        self.parse_params = params
-        return self
-
-
-    def get_gallery_meta(self, soup: bs) -> tuple[str, str, int]:
+    def get_gallery_meta(self, soup: bs, gallery_url: str) -> tuple[str, str, int]:
         
         title_selector, count_selector = self.parse_params.headers_selectors
         
-        gallery_id = ID_REGEX.search(self.current_url)[1]
+        gallery_id = ID_REGEX.search(gallery_url)[1]
 
         gallery_title = soup.select_one(title_selector).text
         page_count = int(PAGE_COUNT_REGEX.search(
@@ -104,7 +94,7 @@ class GalleryParser(PageParser):
         
         for i, url in enumerate(page_urls, 1):
 
-            page_res = self.parent_api.get_response(url)
+            page_res = self.get(url)
             soup = bs(page_res.text, 'lxml')
 
             selector, tag_attr = self.parse_params.big_img_selectors
@@ -117,9 +107,10 @@ class GalleryParser(PageParser):
     def parse(self, response: httpx.Response) -> GalleryPackage:
         
         soup = bs(response.text, 'lxml')
-        self.current_url = str(response.url)
 
-        gallery_id, title, page_count = self.get_gallery_meta(soup)
+        gallery_id, title, page_count = self.get_gallery_meta(
+            soup, str(response.url)
+        )
         
         if template := self.parse_params.template_url:
             self.parse_params.template_url = \
@@ -134,10 +125,16 @@ class GalleryParser(PageParser):
 
         return GalleryPackage(
             gallery_id, title, image_urls, download_dir)
+    
+
+def get_gallery_api(parse_params: GalleryParseParams) -> GalleryApi:
+    client = httpx.Client()
+    return GalleryApi(client, parse_params)
 
 
 __all__ = [
-    'GalleryParser',
+    'GalleryApi',
     'GalleryPackage',
     'GalleryParseParams',
+    'get_gallery_api'
 ]

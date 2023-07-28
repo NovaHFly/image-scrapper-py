@@ -110,29 +110,40 @@ class AuthorPackage(BasicPackage):
 
 # ^ ------------------------------------------------
 
-class PageParser(ABC):
-    
-    def set_parent_api(self, parent_api: 'ScrapperApi'):
-        self.parent_api = parent_api
+@dataclass
+class ScrapperApi(ABC):
 
+    client: httpx.Client
+    
     @abstractmethod
     def parse(self, response: httpx.Response) -> DownloadPackage:
         ...
 
-@dataclass
-class ScrapperApi:
+    def download_from(self, url: str):
+        
+        response = self.get(url)
 
-    client: httpx.Client
-    parser: PageParser
+        try:
+            package = self.parse(response)
+        except UnloggedError:
+            ic('Please, restart program!')
+            exit(1)
+            
+        self._download_package(package)
+
+    # ^ ---- Http Client wrappers
 
     @retry_times(5)
-    def get_response(self, url: str):
-        """Allows for request repeating on exception"""
+    def get(self, url: str):
+        """Get request wrapper which repeats on exception."""
         return self.client.get(url)
     
     @retry_times(5)
-    def post_response(self, url: str, payload: dict):
+    def post(self, url: str, payload: dict):
+        """Post request wrapper which repeats on exception."""
         return self.client.post(url, data=payload)
+
+    # ^ ---- Download methods
 
     def _download_package(self, package: DownloadPackage):
 
@@ -150,15 +161,6 @@ class ScrapperApi:
                 self._download_file(contents, file_path)
                 continue
 
-    def _write_text(self, text: str, to_path: Path):
-        
-        success_message = BASE_SUCCESS_MESSAGE.format('Text', to_path)
-
-        with to_path.open('w', encoding='UTF-8') as file:
-            file.write(text)
-
-        ic(success_message)
-
     @retry_times(5)
     def _download_file(self, from_url: str, to_path: Path):
         """Downloads one file"""
@@ -174,21 +176,18 @@ class ScrapperApi:
 
         ic(success_message)
 
-    def download_from(self, url: str):
+    def _write_text(self, text: str, to_path: Path):
         
-        response = self.get_response(url)
+        success_message = BASE_SUCCESS_MESSAGE.format('Text', to_path)
 
-        try:
-            package = self.parser.parse(response)
-        except UnloggedError:
-            ic('Please, restart program!')
-            exit(1)
-            
-        self._download_package(package)
+        with to_path.open('w', encoding='UTF-8') as file:
+            file.write(text)
+
+        ic(success_message)
 
 
 def get_api(
-        page_parser: Callable[[], PageParser],
+        api_class: Callable[[], ScrapperApi],
         headers: dict = {}, cookies: dict = {},
         ) -> ScrapperApi:
     
@@ -197,10 +196,7 @@ def get_api(
         headers=BASE_HEADERS | headers, cookies=cookies,
         follow_redirects=True)
     
-    parser = page_parser()
-    
-    api = ScrapperApi(client, parser)
-    parser.set_parent_api(api)
+    api = api_class(client)
     
     return api
 
@@ -211,7 +207,6 @@ __all__ = [
     'AuthorPackage',
     'DownloadPackage',
     'ScrapperApi',
-    'PageParser',
     'construct_package_name',
     'UnloggedError',
     'get_api',

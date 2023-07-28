@@ -3,7 +3,7 @@ import importlib
 from pathlib import Path
 
 from image_scrapper.api import (
-    GalleryParseParams, GalleryParser, get_api)
+    GalleryParseParams, GalleryApi, get_gallery_api)
 
 
 SELF_PATH = Path(__file__).absolute().parent
@@ -28,9 +28,5 @@ module_names = (
 )
 
 module_apis = {
-    name: get_api(
-        GalleryParser().set_parse_params(
-            get_parse_params(name)
-        )
-    ) for name in module_names
+    name: get_gallery_api(get_parse_params(name)) for name in module_names
 }
