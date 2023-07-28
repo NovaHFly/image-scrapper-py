@@ -16,6 +16,7 @@ from image_scrapper.helpers import (
     replace_win_path_symbols,
     write_cookies, dump_response_text
 )
+from .stash import get_stash_urls
 
 LOCAL_HEADERS = {'referer': 'https://www.deviantart.com'}
 
@@ -23,6 +24,8 @@ LOCAL_DOWNLOADS = DOWNLOADS / 'deviantart'
 LOCAL_COOKIES = COOKIES / 'deviantart'
 
 STASH_REGEX = re.compile('(sta\.sh\/[0-9a-z]+)\??')
+
+SIZE_REGEX = re.compile('size([0-9]+x[0-9]+)px')
 
 
 @dataclass
@@ -75,15 +78,20 @@ class DeviantartPackage(AuthorPackage):
 
 def _get_original_link(fullview: str, image_size: tuple[int, int]) -> str:
     
+    if '.png?' in fullview:
+        return fullview
+
     width, height = image_size
 
     fullview = fullview.split('?')[0]
-    beginning, _, stem = fullview.rpartition('/')
+    beginning, divider, stem = fullview.rpartition('/fill/')
+    stem = stem.split("/")[1]
+
 
     dimensions = f'w_{width},h_{height},q_100'
     beginning = beginning.replace('/f/', '/intermediary/f/')
 
-    return f'{beginning}/{dimensions}/{stem}'
+    return f'{beginning}{divider}{dimensions}/{stem}'
 
 def _get_download_url(main: bs) -> str | None:
     
@@ -96,6 +104,7 @@ def _get_download_url(main: bs) -> str | None:
     if (video_link := main.select_one('link[as="video"]')):
         return video_link.attrs['href']
 
+    # ! Prolly not working anymore
     if (fullview_link := main.select_one('link[fetchpriority="high"]')):
         
         image_size_string = main.select_one('._3rhGt').text.split('px')[0]
@@ -105,10 +114,11 @@ def _get_download_url(main: bs) -> str | None:
     
     if img_alt := main.select_one('img.TZM0T'):
         ic('Alt image!')
-        image_size_string = main.select_one('._3rhGt').text.split('px')[0]
-        image_size = (int(size) for size in image_size_string.split('x'))
+        # image_size_raw = SIZE_REGEX.search(main.text)[1].split('x')
+        # image_size = (int(size) for size in image_size_raw)
         
-        return _get_original_link(img_alt.attrs['src'], image_size)
+        # return _get_original_link(img_alt.attrs['src'], image_size)
+        return img_alt.attrs['src']
 
     return None
 
@@ -117,59 +127,13 @@ def _get_description(main: bs) -> str | None:
     # If description isn't present by either of selectors return None
     if (editor_journal := \
             main.select_one('.da-editor-journal') or main.select_one('.legacy-journal')):
-        return editor_journal.text
+        # return '\n'.join(editor_journal.strings)
+        return "\n".join(editor_journal.strings)
     
     return None
 
-def _get_stash_file(main: bs) -> tuple[str, str]:
-    img_tags = main.select('img[collect_rid]')
-    img_url = img_tags[1].attrs['src']
-    img_title = main.select_one('a.title').text
-
-    return img_url, img_title
-
 
 class LocalApi(ScrapperApi):
-
-    def _get_stash_urls(self, description: str) -> Iterable[tuple[str,str]]:
-        """Goes over all sta.sh urls found in deviation's description.
-        Separately processes sta.sh singles and folders."""
-
-        if not description:
-            return None
-        
-        # Collect all sta.sh urls
-        stash_urls = (match[1] for match in STASH_REGEX.finditer(description))
-
-        # IF none are found stop generator
-        if not stash_urls:
-            return None
-        
-        # ! Temporarily unavailable
-        return None
-
-        for url in (f'https://{stash_url}' for stash_url in stash_urls):
-
-            ic(url)
-
-            res = self.get(url)
-            main = bs(res.text, 'lxml')
-
-            # If url leads to single image
-            if not (folder_title_tag := main.select_one('h2')):
-                yield _get_stash_file(main)
-                continue
-                
-            folder_title = folder_title_tag.text
-
-            # Iterate over all item anchor tags in folder page
-            for i, a in enumerate(main.select('.stash-thumb-container.already-uploaded a.t'), 1):
-
-                stash_url = a.attrs['href']
-                res = self.get(stash_url)
-
-                img_url, img_title = _get_stash_file(bs(res.text, 'lxml'))
-                yield img_url, f'[{folder_title}] [{i}] {img_title}'
 
     def parse(self, response: Response) -> DeviantartPackage:
 
@@ -202,7 +166,7 @@ class LocalApi(ScrapperApi):
 
         download_url = _get_download_url(main)
         description = _get_description(main)
-        stash_urls = self._get_stash_urls(description)
+        stash_urls = get_stash_urls(self, main)
 
         
         return DeviantartPackage(
@@ -212,5 +176,7 @@ class LocalApi(ScrapperApi):
 
 __all__ = [
     'LocalApi',
+    'LOCAL_COOKIES',
+    'LOCAL_HEADERS',
 ]
 
